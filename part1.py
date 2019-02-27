@@ -20,15 +20,46 @@ except:
 task_list = []
 processor_list = []
 
-class Task:
-	def __init__(self, name="", length=0, unary_inclusive=[], unary_exlusive=[], binary_equal=[], binary_not_simul=[]):
-		self.name = name
-		self.length = length
+class Constraints:
+	def __init__(self, unary_inclusive=[], unary_exlusive=[], binary_equal=[], binary_not_equal=[], binary_not_simul=[]):
 		self.unary_inclusive = unary_inclusive 
 		self.unary_exlusive = unary_exlusive
 		self.binary_equal = binary_equal
 		self.binary_not_equal = binary_not_equal
 		self.binary_not_simul = binary_not_simul
+
+class Variable:
+	def __init__(self, name="", length=0, domain=[], constraints=Constraints([],[],[],[],[])):
+		self.name = name
+		self.length = length
+		self.domain = domain
+		self.constraints = constraints
+
+class CSP:
+	def __init__(self, variables, domain, constraints):
+		self.variables = variables
+		self.domain = domain
+		self.constraints = constraints
+
+var = Variable("C", 6, ['p', 'q', 'r', 'x', 'y', 'z'], Constraints())
+print(var.name)
+print(var.length)
+print(var.domain)
+print(var.constraints.unary_inclusive)
+print(var.constraints.unary_exlusive)
+print(var.constraints.binary_equal)
+
+def print_csp(csp):
+	print("Constraint Satisfaction Problem")
+	print("X: {}".format(CSP.variables))
+	print("D: {}".format(CSP.domain))
+	print("C:   ")
+	print("")
+
+def print_constraints(constraints):
+	print("unary_inclusive")
+
+
 
 # Will have costs associated with them in part II
 class Processor:
@@ -47,7 +78,7 @@ try:
 
 			# Process the line
 			line_info = line.split()
-
+ 
 			# don't do anything for the last line
 			# if not line_info:
 			# 	break
@@ -61,22 +92,7 @@ try:
 
 				# Choose what to do for each section
 
-
-			
 			print("{}:{} = {}".format(file_section_count, file_line_count, line_info))
-			'''
-			# If we hit the ##### marker dont do anything just move to next line
-			# But signify that we are not adding distances and not connections
-			if str.splitlines(line) == ['#####']:
-				top_half = 0
-			else:
-				if top_half == 1:
-					# find the node in the nodes list
-					add_connection(line_info[0], line_info[1], line_info[2])
-					current_node = Node(line_info[0], 0, line_info[1])
-				else:
-					add_distance(line_info[0], line_info[1])
-			'''
 
 			# Read next line
 			line = fp.readline()
