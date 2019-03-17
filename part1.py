@@ -52,6 +52,11 @@ class Constraint_Matrix:
 					if self.matrix[i][self.domain.index(value)] != 0:
 						self.matrix[i][self.domain.index(value)] = 1
 
+	def add_bin_e(self):
+		for i in range(self.dim):
+			if self.matrix[i][i] != 0:
+				self.matrix[i][i] = 1
+
 	def add_bin_ne(self):
 		for i in range(self.dim):
 			self.matrix[i][i] = 0
@@ -65,18 +70,16 @@ class Constraint_Matrix:
 cm = Constraint_Matrix('C', 'G', ['p', 'q', 'r', 'x', 'y', 'z'], 6)
 
 def print_matrix(matrix):
-	print("")
+	# print("")
 	for row in matrix:
 		print(row)
 
 print_matrix(cm.matrix)
 cm.add_excl('C',['q', 'r'])
 cm.add_incl('G',['p', 'r', 'y', 'z'])
-cm.add_bin_ne()
+cm.add_bin_e()
 cm.cleanup()
 print_matrix(cm.matrix)
-
-
 
 
 # cm = [[0]]
@@ -133,16 +136,16 @@ cm.append([])
 print(cm)
 '''
 
-class Constraints:
-	def __init__(self, unary_inclusive=[], unary_exlusive=[], binary_equal=[], binary_not_equal=[], binary_not_simul=[]):
-		self.unary_inclusive = unary_inclusive 
-		self.unary_exlusive = unary_exlusive
-		self.binary_equal = binary_equal
-		self.binary_not_equal = binary_not_equal
-		self.binary_not_simul = binary_not_simul
+# class Constraints:
+# 	def __init__(self, unary_inclusive=[], unary_exlusive=[], binary_equal=[], binary_not_equal=[], binary_not_simul=[]):
+# 		self.unary_inclusive = unary_inclusive 
+# 		self.unary_exlusive = unary_exlusive
+# 		self.binary_equal = binary_equal
+# 		self.binary_not_equal = binary_not_equal
+# 		self.binary_not_simul = binary_not_simul
 
 class Variable:
-	def __init__(self, name="", length=0, domain=[]):
+	def __init__(self, name='', length=0, domain=[]):
 		self.name = name
 		self.length = length
 		self.domain = domain
@@ -177,61 +180,105 @@ class Processor:
 		self.name = name
 
 
+constraint_list = []
+
+
 deadline = 0
 variable_list = []
+var_name_list = []
 file_line_count = 0
 file_section_count = 0
 ## Loop to read graph data from .txt file and to store it in the nodes list
 ## using the functions above
 # Reading in data from node file
-try:
-	with open(filepath) as fp:
+# try:
+with open(filepath) as fp:
+	line = fp.readline()
+	while line:
+
+		# Process the line
+		line_info = line.split()
+
+		if str.splitlines(line[0:5]) == ['#####']:
+			file_section_count += 1
+		else:
+			# Ensuring file began correctly
+			if file_section_count == 0:
+				print("File did not begin with '#####'' marker")
+				exit()
+
+			if file_section_count == 1: # variables
+				variable_list.append(Variable(line_info[0], line_info[1], []))
+				var_name_list.append(line_info[0])
+			elif file_section_count == 2: # values
+				for var in variable_list:
+					var.domain.append(line_info[0])
+			elif file_section_count == 3: # deadline constraint
+				deadline = line_info[0]
+
+				# take the time to create a constraint matrix for all binary constraints
+				for variable in variable_list:
+					# print(variable.name)
+					# print(var_name_list)
+					adj_list = var_name_list[:]
+					adj_list.remove(variable.name)
+					# print(adj_list)
+					for var in adj_list:
+						# Crate constraint matrix Variable\x
+						copy_c_list = constraint_list[:]
+						already_inside = 0
+						for constraint in copy_c_list:
+							if constraint.m1 == var or constraint.m1 == var:
+								already_inside = 1
+						if not already_inside:
+							constraint_list.append(Constraint_Matrix(variable.name, var, variable.domain, len(variable.domain)))
+				# print(len(constraint_list))
+			elif file_section_count == 4: # unary inclusive
+				for constraint in constraint_list:
+					if constraint.m1 == line_info[0] or constraint.m2 == line_info[0]:
+						constraint.add_incl(line_info[0], line_info[1:len(line_info)])
+			elif file_section_count == 5: # unary exclusive
+				for constraint in constraint_list:
+					if constraint.m1 == line_info[0] or constraint.m2 == line_info[0]:
+						constraint.add_excl(line_info[0], line_info[1:len(line_info)])
+			elif file_section_count == 6: # binary equals
+				for constraint in constraint_list:
+					if constraint.m1 == line_info[0] and constraint.m2 == line_info[1]:
+						constraint.add_bin_e()
+			elif file_section_count == 7: # binary not equals
+				for constraint in constraint_list:
+					if constraint.m1 == line_info[0] and constraint.m2 == line_info[1]:
+						constraint.add_bin_ne()
+			elif file_section_count == 8: # binary not simultaneous
+				i = 1
+
+
+			# Choose what to do for each section
+
+		print("{}:{} = {}".format(file_section_count, file_line_count, line_info))
+
+		# Read next line
 		line = fp.readline()
-		while line:
+		file_line_count += 1 # count is for debugging and printing 
 
-			# Process the line
-			line_info = line.split()
- 
-			if str.splitlines(line[0:5]) == ['#####']:
-				file_section_count += 1
-			else:
-				# Ensuring file began correctly
-				if file_section_count == 0:
-					print("File did not begin with '#####'' marker")
-					exit()
+# Clean up all matrices
+for constraint in constraint_list:
+	constraint.cleanup()
 
-				if file_section_count == 1: # variables
-					variable_list.append(Variable(line_info[0], line_info[1], []))
-				elif file_section_count == 2: # values
-					for var in variable_list:
-						var.domain.append(line_info[0])
-				elif file_section_count == 3: # deadline constraint
-					deadline = line_info[0]
-				elif file_section_count == 4: # unary inclusive
-					i = 1
-				elif file_section_count == 5: # unary exclusive
-					i = 1
-				elif file_section_count == 6: # binary equals
-					i = 1
-				elif file_section_count == 7: # binary not equals
-					i = 1
-				elif file_section_count == 8: # binary not simultaneous
-					i = 1
+def print_constraints(var):
+	for c in constraint_list:
+		if c.m1 == var or c.m2 == var:
+			print("{}/{}".format(c.m1, c.m2))
+			print_matrix(c.matrix)
+
+print_constraints('C')
 
 
-				# Choose what to do for each section
-
-			# print("{}:{} = {}".format(file_section_count, file_line_count, line_info))
-
-			# Read next line
-			line = fp.readline()
-			file_line_count += 1 # count is for debugging and printing 
-
-	fp.close()
-except:
-	print("Graph file '{}' could not be opened for reading.".format(filepath))
-	print("Please check spelling and location of file.")
-	exit()
+fp.close()
+# except:
+# 	print("Graph file '{}' could not be opened for reading.".format(filepath))
+# 	print("Please check spelling and location of file.")
+# 	exit()
 
 def complete_assignment():
 	return true
