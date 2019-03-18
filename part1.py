@@ -8,6 +8,7 @@
 from random import shuffle
 import sys
 import time
+import copy
 
 # Path to graph node file
 # Must be in same directory as python script
@@ -23,6 +24,9 @@ except:
 # This simplifies things like arc-consistency, etc. but makes the setup hard. It also makes it not universal. Say
 # we have a constraint that all are not the same, we would have to create a binary constraint with each variable and that 
 # would be hard on the beginning. 
+
+constraint_list = []
+
 
 class Constraint_Matrix:
 	def __init__(self, m1, m2, domain, dim):
@@ -71,7 +75,7 @@ class Constraint_Matrix:
 		self.bin_tag = 1
 
 	def add_bin_ns(self, values):
-		print("valus = {}".format(values))
+		# print("valus = {}".format(values))
 		m1_index = self.domain.index(values[0])
 		m2_index = self.domain.index(values[1])
 		self.matrix[m1_index][m2_index] = 0
@@ -91,7 +95,10 @@ def print_matrix(matrix):
 
 def print_constraints(var):
 	for c in constraint_list:
-		if c.m1 == var or c.m2 == var:
+		if var == 'all':
+			print("{}/{}".format(c.m1, c.m2))
+			print_matrix(c.matrix)
+		elif c.m1 == var or c.m2 == var:
 			print("{}/{}".format(c.m1, c.m2))
 			print_matrix(c.matrix)
 
@@ -103,59 +110,6 @@ def print_constraints(var):
 # print_matrix(cm.matrix)
 
 
-# cm = [[0]]
-
-# def dim_increase(matrix):
-# 	dim = len(matrix) 
-# 	row_plus_one = [0]*(dim+1)
-# 	matrix.append(row_plus_one)
-# 	counter = 0
-# 	while counter < dim:
-# 		matrix[counter] = row_plus_one[:]
-# 		counter += 1
-
-# def print_matrix_test():
-# 	count = 0
-# 	print("matrix print")
-# 	while count < 3:
-# 		print(cm)
-# 		dim_increase(cm)
-# 		count += 1	
-# 	print("end matrix print")
-# print_matrix_test()
-
-# id_cm = [[1,0,0],[0,1,0],[0,0,1]]
-
-# def identity_matrix(matrix):
-# 	id_matrix = matrix[:]
-# 	counter = 0
-# 	# print(id_matrix)
-# 	while counter < len(id_matrix):
-# 		#print(id_matrix)
-# 		id_matrix[counter][counter] = 1
-
-# 		counter += 1
-# 	#print(id_matrix)
-# 	return id_matrix
-
-# print(identity_matrix(cm))
-# print()
-# print(cm)
-# cm[0][0] = 1
-# #cm[1][1] = 1
-# #cm[2][2] = 1
-# print(cm)
-
-
-'''
-variable_list = []
-domain_list = []
-cm = [[]]
-print(cm)
-cm[0].append(0)
-cm.append([])
-print(cm)
-'''
 
 # class Constraints:
 # 	def __init__(self, unary_inclusive=[], unary_exlusive=[], binary_equal=[], binary_not_equal=[], binary_not_simul=[]):
@@ -187,6 +141,11 @@ class CSP:
 		for var in self.variables:
 			if var.name == var_name:
 				return var.assignment
+
+	def get_domain(self, var_name):
+		for var in self.variables:
+			if var.name == var_name:
+				return var.domain
 
 	def add_assignment(self, var_name, value):
 		for var in self.variables:
@@ -230,7 +189,6 @@ class Processor:
 		self.name = name
 
 
-constraint_list = []
 
 def list_diff(list_1, list_2):
     return list(set(list_1).symmetric_difference(set(list_2)))
@@ -278,12 +236,12 @@ with open(filepath) as fp:
 				for variable in variable_list:
 					# print(variable.name)
 					# print(var_name_list)
-					adj_list = var_name_list[:]
+					adj_list = copy.deepcopy(var_name_list)
 					adj_list.remove(variable.name)
 					# print(adj_list)
 					for var in adj_list:
 						# Crate constraint matrix Variable\x
-						copy_c_list = constraint_list[:]
+						copy_c_list = copy.deepcopy(constraint_list)
 						already_inside = 0
 						for constraint in copy_c_list:
 							if constraint.m1 == var or constraint.m1 == var:
@@ -354,7 +312,7 @@ for constraint in constraint_list:
 
 # Create Constraint Satisfaction Problem with:
 # Variables, Domain, & Constraints
-csp = CSP(variable_list, domain_list, constraint_list, deadline)
+csp_global = CSP(variable_list, domain_list, constraint_list, deadline)
 
 
 def complete_assignment(csp):
@@ -375,7 +333,7 @@ def get_sorted_mrv(csp):
 				# do a looped comparison
 				counter = 0
 				did_assign = 0
-				copy_mrv = mrv[:]
+				copy_mrv = copy.deepcopy(mrv)
 
 				for var_mrv in copy_mrv:
 					if var_mrv[1] > len(var.domain) and not did_assign: # 2 elt list
@@ -403,7 +361,7 @@ def has_constraint(cm):
 	return counter
 
 def get_degree(csp, slice_mrv):
-	deg = slice_mrv[:] # make a copy of it
+	deg = copy.deepcopy(slice_mrv) # make a copy of it
 	for tie_mrv in slice_mrv:
 		# have our ['C', 10] --> only need 'C'
 		degree = 0
@@ -425,8 +383,8 @@ def get_degree(csp, slice_mrv):
 		# 			# do a looped comparison
 		# 			counter = 0
 		# 			did_assign = 0
-		# 			copy_mrv = mrv[:]
-
+		# 			copy_mrv = copy.deepcopy(mrv)
+		#			should not be running i dont think			
 		# 			for var_mrv in copy_mrv:
 		# 				if var_mrv[1] > len(var.domain) and not did_assign: # 2 elt list
 		# 					mrv.insert(counter, [var.name, len(var.domain)])
@@ -452,7 +410,7 @@ def get_degree(csp, slice_mrv):
 
 # print(get_sorted_mrv(csp))
 
-print_csp(csp)
+print_csp(csp_global)
 
 def sort_ascending(list1):
 	sorted_list = sorted(list1, key=lambda x: x[1])
@@ -462,7 +420,7 @@ def sort_ascending(list1):
 def select_unassigned(csp):
 	# minimum remaining values heuristic
 	mrv = get_sorted_mrv(csp)
-	print(mrv)
+	print("### select_unassigned() - {} (mrv's) ###".format(mrv))
 
 	# Solve simple case and create list for degree case
 	if len(mrv) == 1:
@@ -479,7 +437,7 @@ def select_unassigned(csp):
 				print(var_mrv)
 				slice_index = mrv.index(var_mrv)
 		if not slice_index:
-			slice_mrv = mrv[:]
+			slice_mrv = copy.deepcopy(mrv)
 		else:
 			slice_mrv = mrv[0:slice_index]
 		# print("mrv ties: {}".format(slice_mrv))
@@ -498,7 +456,12 @@ def select_unassigned(csp):
 # print_constraints('C')
 # print_constraints('D')
 
-select_unassigned(csp)
+# select_unassigned(csp_global)
+
+
+
+
+
 
 def order_domain_values(var_name, csp):
 	# Using least-constraining-value heuristic
@@ -507,29 +470,125 @@ def order_domain_values(var_name, csp):
 	#		a. Each of those values will ultimately have a "score"
 	#		b. Score is the # of domain elimanations it caused
 	# 		c. We want to order them in ascending order to choose LCV
+	# 	- Difficult part is the score part
+	# 	- Idea1: create a snapshot (deepcopy) of the current variables
+	#		- sum length of domain of every variable
+	# 	- Iteratively change out the assignment of the current variable to this snapshot (C=p, C=q, etc.)
+	#		- Use constraint matrices to delete domain elements in UNASSIGNED VARIABLES
+	#		- sum length of domain of every variable, assign to 2-elt list 
+
+	csp_copy = copy.deepcopy(csp)
+
+	# old_domain_value = len(csp.get_domain(var_name))
+	# get the current score
+	domain_count = 0
+	for var in csp_copy.variables:
+		domain_count += len(var.domain)
+	# print(domain_count)
+
+	value_scores = [[]]
+	for values in csp_copy.get_domain(var_name):
+		if len(value_scores[0]) == 0:
+			value_scores = [[values, 0]]
+		else:
+			value_scores.append([values, 0])
+	# print("value scores: {}".format(value_scores))
+
+	print("##### order_domain_values() - FINDING LCV FOR {} #####".format(var_name))
+	# for each of our potential values determine the change in domain
+	for val_score in value_scores:
+		csp_copy = copy.deepcopy(csp)
+		# csp_copy.print_assignments()
+		csp_copy.add_assignment(var_name, val_score[0]) # adds our testing assignment to the csp
+		# csp_copy.print_assignments()
+
+		# print("GETTING SCORE FOR VALUE {}".format(val_score[0]))
+		current_score = 0
+
+		# csp_copy.print_assignments()
+		# now we need to perform arc consistency to eliminate domain values
+		for var in csp_copy.variables:
+			if var.assignment == '?': # only care about unassigned variables (including current one)
+				# print("name={}".format(var.name))
+				var_domain_copy = copy.deepcopy(var.domain)
+				for value in var_domain_copy: # look at every domain value
+					# csp_copy.add_assignment(var.name, value)
+					if not is_consistent(var.name, value, csp_copy):
+						# print("{} != {}".format())
+						var.domain.remove(value)
+						current_score += 1
+						# print('{} domain => {}'.format(var.name, var.domain))
+					# csp_copy.remove_assignment(var.name)
+		# new_domain_count = 0
+		# for var in csp_copy.variables:
+			# new_domain_count += len(var.domain)
+		val_score[1] = current_score
+
+		# print("[{}] -> LCV_scores = {}".format(val_score[0], value_scores))
+
+	sorted_value_scores = sort_ascending(value_scores)
+	print("Sorted LCV: {}".format(sorted_value_scores))
+	sorted_values = []
+	for scores in sorted_value_scores:
+		sorted_values.append(scores[0])
+	return sorted_values
+	# fill in old domain values with current values
+
 
 	# temporary random assignment until we get LCV working
-	for var in csp.variables:
-		if var.name == var_name:
-			shuffled_domain = var.domain[:]
-			shuffle(shuffled_domain)
-			return shuffled_domain
+	# for var in csp.variables:
+	# 	if var.name == var_name:
+	# 		shuffled_domain = copy.deepcopy(var.domain)
+	# 		shuffle(shuffled_domain)
+	# 		return shuffled_domain
+
 
 def is_consistent(var_name, value, csp):
 	# All but the deadline constraint
 	for constraint in csp.constraints: # loop through each constraint
-		if constraint.m1 == var_name and csp.get_assignment(constraint.m2) != '?':
-			# print(csp.get_assignment(constraint.m2))
-			# print(csp.get_assignment(constraint.m1)) 
-			if constraint.matrix[csp.get_index(value)][csp.get_index(csp.get_assignment(constraint.m2))] == 0:
-				print("{}/{} == {}/{}".format(constraint.m1, constraint.m2, value, csp.get_assignment(constraint.m2)))
-				return 0
-		elif constraint.m2 == var_name and csp.get_assignment(constraint.m1) != '?': 
-			# print(csp.get_assignment(constraint.m2))
-			# print(csp.get_assignment(constraint.m1))
-			if constraint.matrix[csp.get_index(csp.get_assignment(constraint.m1))][csp.get_index(value)] == 0:
-				print("{}/{} == {}/{}".format(constraint.m1, constraint.m2, csp.get_assignment(constraint.m1), value))
-				return 0
+		if constraint.m1 == var_name:
+			if csp.get_assignment(constraint.m2) != '?': # if other is assigned check that spot
+				if constraint.matrix[csp.get_index(value)][csp.get_index(csp.get_assignment(constraint.m2))] == 0:
+					# print("{}/{} != {}/{}".format(constraint.m1, constraint.m2, value, csp.get_assignment(constraint.m2)))
+					return 0
+			# else: # if unassigned
+			# 	# check for at least one 1 in the row
+			# 	one_flag = 0
+			# 	for index in range(len(csp.domain)):
+			# 		if constraint.matrix[csp.get_index(value)][index] == 1:
+			# 			one_flag = 1
+			# 	return one_flag
+		elif constraint.m2 == var_name:
+			if csp.get_assignment(constraint.m1) != '?': # if other is assigned check that spot
+				if constraint.matrix[csp.get_index(csp.get_assignment(constraint.m1))][csp.get_index(value)] == 0:
+					# print("{}/{} != {}/{}".format(constraint.m1, constraint.m2, csp.get_assignment(constraint.m1), value))
+					return 0
+			# else: # if unassigned
+			# 	# check for at least one 1 in the column
+			# 	one_flag = 0
+			# 	for index in range(len(csp.domain)):
+			# 		if constraint.matrix[index][csp.get_index(value)] == 1:
+			# 			one_flag = 1
+			# 	return one_flag
+
+
+
+	# # All but the deadline constraint
+	# for constraint in csp.constraints: # loop through each constraint
+	# 	if constraint.m1 == var_name and csp.get_assignment(constraint.m2) != '?':
+	# 		# print(csp.get_assignment(constraint.m2))
+	# 		# print(csp.get_assignment(constraint.m1)) 
+	# 		if constraint.matrix[csp.get_index(value)][csp.get_index(csp.get_assignment(constraint.m2))] == 0:
+	# 			# print("{}/{} == {}/{}".format(constraint.m1, constraint.m2, value, csp.get_assignment(constraint.m2)))
+	# 			return 0
+	# 	elif constraint.m2 == var_name and csp.get_assignment(constraint.m1) != '?': 
+	# 		# print(csp.get_assignment(constraint.m2))
+	# 		# print(csp.get_assignment(constraint.m1))
+	# 		if constraint.matrix[csp.get_index(csp.get_assignment(constraint.m1))][csp.get_index(value)] == 0:
+	# 			# print("{}/{} == {}/{}".format(constraint.m1, constraint.m2, csp.get_assignment(constraint.m1), value))
+	# 			return 0
+
+
 	# Deadline constraint
 	# Sum the length of each assigned
 	proc_times = [[]]
@@ -552,14 +611,14 @@ def is_consistent(var_name, value, csp):
 	# print(proc_times)
 
 	for p_t in proc_times:
-		if p_t[1] > csp.deadline:
+		if int(p_t[1]) > int(csp.deadline):
 			return 0
 
 	return 1
 
 def backtracking_search(csp):
 	if recursive_backtracking(csp): # success
-		print("Success - Function needs to be written")
+		print("\nSuccess - Solution Found:")
 		csp.print_assignments()
 	else:
 		print("No solution could be found")
@@ -575,7 +634,7 @@ def recursive_backtracking(csp):
 		if is_consistent(var_name, value, csp):
 			print("success... {} == {}".format(var_name, value))
 			csp.add_assignment(var_name, value)
-			csp.print_assignments()
+			# csp.print_assignments()
 			##### 
 			# inferences = inference(csp, variable, value) # AC-3 stuff
 			# if inferences != failure:
@@ -592,7 +651,7 @@ def recursive_backtracking(csp):
 	return 0
 
 
-backtracking_search(csp)
+backtracking_search(csp_global)
 
 '''
 def recursive_backtracking(assignment, csp):
