@@ -57,8 +57,12 @@ class Constraint_Matrix:
 
 	def add_bin_e(self):
 		for i in range(self.dim):
-			if self.matrix[i][i] != 0:
-				self.matrix[i][i] = 1
+			for j in range(self.dim):
+				if i != j:
+					self.matrix[i][j] = 0
+				else:
+					if self.matrix[i][j] != 0:
+						self.matrix[i][j] = 1
 		self.bin_tag = 1
 
 	def add_bin_ne(self):
@@ -66,11 +70,17 @@ class Constraint_Matrix:
 			self.matrix[i][i] = 0
 		self.bin_tag = 1
 
+	def add_bin_ns(self, values):
+		print("valus = {}".format(values))
+		m1_index = self.domain.index(values[0])
+		m2_index = self.domain.index(values[1])
+		self.matrix[m1_index][m2_index] = 0
+
 	def cleanup(self):
 		for i in range(self.dim):
 			for j in range(self.dim):
 				if self.matrix[i][j] == 2:
-					self.matrix[i][j] = 0
+					self.matrix[i][j] = 1
 
 # cm = Constraint_Matrix('C', 'G', ['p', 'q', 'r', 'x', 'y', 'z'], 6)
 
@@ -78,6 +88,12 @@ def print_matrix(matrix):
 	# print("")
 	for row in matrix:
 		print(row)
+
+def print_constraints(var):
+	for c in constraint_list:
+		if c.m1 == var or c.m2 == var:
+			print("{}/{}".format(c.m1, c.m2))
+			print_matrix(c.matrix)
 
 # print_matrix(cm.matrix)
 # cm.add_excl('C',['q', 'r'])
@@ -202,8 +218,8 @@ def print_csp(csp):
 
 
 
-def print_constraints(constraints):
-	print("unary_inclusive")
+# def print_constraints(constraints):
+	# print("unary_inclusive")
 
 
 
@@ -214,6 +230,9 @@ class Processor:
 
 
 constraint_list = []
+
+def list_diff(list_1, list_2):
+    return list(set(list_1).symmetric_difference(set(list_2)))
 
 
 deadline = 0
@@ -226,85 +245,92 @@ inclusive_list = []
 ## Loop to read graph data from .txt file and to store it in the nodes list
 ## using the functions above
 # Reading in data from node file
-try:
-	with open(filepath) as fp:
+# try:
+with open(filepath) as fp:
+	line = fp.readline()
+	while line:
+
+		# Process the line
+		line_info = line.split()
+
+		if str.splitlines(line[0:5]) == ['#####']:
+			file_section_count += 1
+			# print_constraints('C')
+			# print("FILE SECTION # = {}".format(file_section_count))
+		else:
+			# Ensuring file began correctly
+			if file_section_count == 0:
+				print("File did not begin with '#####'' marker")
+				exit()
+
+			if file_section_count == 1: # variables
+				variable_list.append(Variable(line_info[0], line_info[1], []))
+				var_name_list.append(line_info[0])
+			elif file_section_count == 2: # values
+				for var in variable_list:
+					var.domain.append(line_info[0])
+				domain_list.append(line_info[0])
+			elif file_section_count == 3: # deadline constraint
+				deadline = line_info[0]
+
+				# take the time to create a constraint matrix for all binary constraints
+				for variable in variable_list:
+					# print(variable.name)
+					# print(var_name_list)
+					adj_list = var_name_list[:]
+					adj_list.remove(variable.name)
+					# print(adj_list)
+					for var in adj_list:
+						# Crate constraint matrix Variable\x
+						copy_c_list = constraint_list[:]
+						already_inside = 0
+						for constraint in copy_c_list:
+							if constraint.m1 == var or constraint.m1 == var:
+								already_inside = 1
+						if not already_inside:
+							constraint_list.append(Constraint_Matrix(variable.name, var, variable.domain, len(variable.domain)))
+				# print(len(constraint_list))
+			elif file_section_count == 4: # unary inclusive
+				# inclusive_list.append(line_info[0]) # add current var to list
+				# for constraint in constraint_list:
+				# 	if constraint.m1 == line_info[0] or constraint.m2 == line_info[0]:
+				# 		constraint.add_incl(line_info[0], line_info[1:len(line_info)])
+				complement_set = list_diff(line_info[1:len(line_info)], domain_list)
+				# print("{} -> {}".format(line_info[1:len(line_info)], complement_set))
+				for constraint in constraint_list:
+					if constraint.m1 == line_info[0] or constraint.m2 == line_info[0]:
+						constraint.add_excl(line_info[0], complement_set)
+			elif file_section_count == 5: # unary exclusive
+				for constraint in constraint_list:
+					if constraint.m1 == line_info[0] or constraint.m2 == line_info[0]:
+						constraint.add_excl(line_info[0], line_info[1:len(line_info)])
+			elif file_section_count == 6: # binary equals
+				for constraint in constraint_list:
+					if constraint.m1 == line_info[0] and constraint.m2 == line_info[1]:
+						constraint.add_bin_e()
+			elif file_section_count == 7: # binary not equals
+				for constraint in constraint_list:
+					if constraint.m1 == line_info[0] and constraint.m2 == line_info[1]:
+						constraint.add_bin_ne()
+			elif file_section_count == 8: # binary not simultaneous
+				for constraint in constraint_list:
+					if constraint.m1 == line_info[0] and constraint.m2 == line_info[1]:
+						constraint.add_bin_ns(line_info[2:4])
+
+			# Choose what to do for each section
+
+		# print("{}:{} = {}".format(file_section_count, file_line_count, line_info))
+
+		# Read next line
 		line = fp.readline()
-		while line:
+		file_line_count += 1 # count is for debugging and printing 
+fp.close()
+# except:
+# 	print("Graph file '{}' could not be opened for reading or another error has occurred.".format(filepath))
+# 	print("Please check spelling and location of file.")
+# 	print("{}".format(sys.exc_info()[0]))
+# 	exit()
 
-			# Process the line
-			line_info = line.split()
-
-			if str.splitlines(line[0:5]) == ['#####']:
-				file_section_count += 1
-			else:
-				# Ensuring file began correctly
-				if file_section_count == 0:
-					print("File did not begin with '#####'' marker")
-					exit()
-
-				if file_section_count == 1: # variables
-					variable_list.append(Variable(line_info[0], line_info[1], []))
-					var_name_list.append(line_info[0])
-				elif file_section_count == 2: # values
-					for var in variable_list:
-						var.domain.append(line_info[0])
-					domain_list.append(line_info[0])
-				elif file_section_count == 3: # deadline constraint
-					deadline = line_info[0]
-
-					# take the time to create a constraint matrix for all binary constraints
-					for variable in variable_list:
-						# print(variable.name)
-						# print(var_name_list)
-						adj_list = var_name_list[:]
-						adj_list.remove(variable.name)
-						# print(adj_list)
-						for var in adj_list:
-							# Crate constraint matrix Variable\x
-							copy_c_list = constraint_list[:]
-							already_inside = 0
-							for constraint in copy_c_list:
-								if constraint.m1 == var or constraint.m1 == var:
-									already_inside = 1
-							if not already_inside:
-								constraint_list.append(Constraint_Matrix(variable.name, var, variable.domain, len(variable.domain)))
-					# print(len(constraint_list))
-				elif file_section_count == 4: # unary inclusive
-					inclusive_list.append(line_info[0]) # add current var to list
-					for constraint in constraint_list:
-						if constraint.m1 == line_info[0] or constraint.m2 == line_info[0]:
-							constraint.add_incl(line_info[0], line_info[1:len(line_info)])
-				elif file_section_count == 5: # unary exclusive
-					for constraint in constraint_list:
-						if constraint.m1 == line_info[0] or constraint.m2 == line_info[0]:
-							constraint.add_excl(line_info[0], line_info[1:len(line_info)])
-				elif file_section_count == 6: # binary equals
-					for constraint in constraint_list:
-						if constraint.m1 == line_info[0] and constraint.m2 == line_info[1]:
-							constraint.add_bin_e()
-				elif file_section_count == 7: # binary not equals
-					for constraint in constraint_list:
-						if constraint.m1 == line_info[0] and constraint.m2 == line_info[1]:
-							constraint.add_bin_ne()
-				elif file_section_count == 8: # binary not simultaneous
-					i = 1
-
-
-				# Choose what to do for each section
-
-			# print("{}:{} = {}".format(file_section_count, file_line_count, line_info))
-
-			# Read next line
-			line = fp.readline()
-			file_line_count += 1 # count is for debugging and printing 
-	fp.close()
-except:
-	print("Graph file '{}' could not be opened for reading or another error has occurred.".format(filepath))
-	print("Please check spelling and location of file.")
-	exit()
-
-# def diff(list_1, list_2):
-#     return list(set(list_1).symmetric_difference(set(list_2)))
 
 # # Clean up all matrices and fill in inclusive for those that were not specified
 # unassigned_inclusive = diff(inclusive_list, var_name_list)
@@ -319,11 +345,7 @@ for constraint in constraint_list:
 
 #### DATA IMPORT COMPLETED ####
 
-def print_constraints(var):
-	for c in constraint_list:
-		if c.m1 == var or c.m2 == var:
-			print("{}/{}".format(c.m1, c.m2))
-			print_matrix(c.matrix)
+
 
 # print_constraints('C')
 
@@ -377,7 +399,7 @@ def has_constraint(cm):
 	counter = 0
 	for i in range(len(cm.matrix[0])):
 		for j in range(len(cm.matrix[0])):
-			if cm.matrix[i][j] == 1:
+			if cm.matrix[i][j] == 0:
 				counter += 1
 	return counter
 
@@ -500,15 +522,16 @@ def is_consistent(var_name, value, csp):
 		if constraint.m1 == var_name and csp.get_assignment(constraint.m2) != '?':
 			# print(csp.get_assignment(constraint.m2))
 			# print(csp.get_assignment(constraint.m1)) 
-			if constraint.matrix[csp.get_index(value)][csp.get_index(csp.get_assignment(constraint.m2))] == 1:
+			if constraint.matrix[csp.get_index(value)][csp.get_index(csp.get_assignment(constraint.m2))] == 0:
+				print("{}/{} == {}/{}".format(constraint.m1, constraint.m2, value, csp.get_assignment(constraint.m2)))
 				return 0
 		elif constraint.m2 == var_name and csp.get_assignment(constraint.m1) != '?': 
 			# print(csp.get_assignment(constraint.m2))
 			# print(csp.get_assignment(constraint.m1))
-			if constraint.matrix[csp.get_index(csp.get_assignment(constraint.m1))][csp.get_index(value)] == 1:
+			if constraint.matrix[csp.get_index(csp.get_assignment(constraint.m1))][csp.get_index(value)] == 0:
+				print("{}/{} == {}/{}".format(constraint.m1, constraint.m2, csp.get_assignment(constraint.m1), value))
 				return 0
 	return 1
-
 
 def backtracking_search(csp):
 	if recursive_backtracking(csp): # success
@@ -516,13 +539,12 @@ def backtracking_search(csp):
 	else:
 		print("No solution could be found")
 
-
 def recursive_backtracking(csp):
 	if complete_assignment(csp):
 		return csp.variables
 	var_name = select_unassigned(csp)
-	print("{}".format(var_name))
-	time.sleep(1)
+	# print("{}".format(var_name))
+	# time.sleep(1)
 	for value in order_domain_values(var_name, csp):
 		print("var: {}  --  val: {}".format(var_name, value))
 		if is_consistent(var_name, value, csp):
@@ -567,7 +589,7 @@ def recursive_backtracking(assignment, csp):
 	return failure
 '''
 
-
+# print_constraints('C')
 
 
 
