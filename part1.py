@@ -174,10 +174,11 @@ class Variable:
 		# self.constraints = constraints
 
 class CSP:
-	def __init__(self, variables, domain, constraints):
+	def __init__(self, variables, domain, constraints, deadline):
 		self.variables = variables
 		self.domain = domain
 		self.constraints = constraints
+		self.deadline = deadline
 
 	def get_index(self, value):
 		return self.domain.index(value)
@@ -199,7 +200,7 @@ class CSP:
 
 	def print_assignments(self):
 		for var in self.variables:
-			print("{}={}".format(var.name, var.assignment))
+			print("{}[{}]	= {}".format(var.name, var.length, var.assignment))
 
 # var = Variable("C", 6, ['p', 'q', 'r', 'x', 'y', 'z'], Constraints())
 # print(var.name)
@@ -353,9 +354,7 @@ for constraint in constraint_list:
 
 # Create Constraint Satisfaction Problem with:
 # Variables, Domain, & Constraints
-csp = CSP(variable_list, domain_list, constraint_list)
-
-
+csp = CSP(variable_list, domain_list, constraint_list, deadline)
 
 
 def complete_assignment(csp):
@@ -503,21 +502,21 @@ select_unassigned(csp)
 
 def order_domain_values(var_name, csp):
 	# Using least-constraining-value heuristic
+	# We are given a variable
+	# 	1. Create a list of it's domain
+	#		a. Each of those values will ultimately have a "score"
+	#		b. Score is the # of domain elimanations it caused
+	# 		c. We want to order them in ascending order to choose LCV
+
+	# temporary random assignment until we get LCV working
 	for var in csp.variables:
 		if var.name == var_name:
 			shuffled_domain = var.domain[:]
 			shuffle(shuffled_domain)
 			return shuffled_domain
 
-
-	# - build sorted list of variable names with their MRV
-	# 	- if [0] != [1] choose [0]
-	# - else loop through the minimum value ones (list[0] : elt != list[0])
-		# - could have if statement 
-
-	# alphabetical heuristic
-
 def is_consistent(var_name, value, csp):
+	# All but the deadline constraint
 	for constraint in csp.constraints: # loop through each constraint
 		if constraint.m1 == var_name and csp.get_assignment(constraint.m2) != '?':
 			# print(csp.get_assignment(constraint.m2))
@@ -531,11 +530,37 @@ def is_consistent(var_name, value, csp):
 			if constraint.matrix[csp.get_index(csp.get_assignment(constraint.m1))][csp.get_index(value)] == 0:
 				print("{}/{} == {}/{}".format(constraint.m1, constraint.m2, csp.get_assignment(constraint.m1), value))
 				return 0
+	# Deadline constraint
+	# Sum the length of each assigned
+	proc_times = [[]]
+
+	# Create empty list for each processor
+	for proc in csp.domain:
+		if len(proc_times[0]) == 0:
+			proc_times = [[proc, 0]]
+		else:
+			proc_times.append([proc, 0])
+	# print(proc_times)
+
+	for var in csp.variables:
+		if var.assignment != '?':
+			for p_t in proc_times:
+				# print("{} {}".format(p_t[0], p_t[1]))
+				# print(var.length)
+				if p_t[0] == var.assignment:
+					p_t[1] = p_t[1] + int(var.length)
+	# print(proc_times)
+
+	for p_t in proc_times:
+		if p_t[1] > csp.deadline:
+			return 0
+
 	return 1
 
 def backtracking_search(csp):
 	if recursive_backtracking(csp): # success
 		print("Success - Function needs to be written")
+		csp.print_assignments()
 	else:
 		print("No solution could be found")
 
@@ -546,9 +571,9 @@ def recursive_backtracking(csp):
 	# print("{}".format(var_name))
 	# time.sleep(1)
 	for value in order_domain_values(var_name, csp):
-		print("var: {}  --  val: {}".format(var_name, value))
+		print("trying...  {} == {}".format(var_name, value))
 		if is_consistent(var_name, value, csp):
-			# print("is consistent")
+			print("success... {} == {}".format(var_name, value))
 			csp.add_assignment(var_name, value)
 			csp.print_assignments()
 			##### 
