@@ -5,7 +5,9 @@
 
 # Imports needed
 # sys needed to format some outputs
+from random import shuffle
 import sys
+import time
 
 # Path to graph node file
 # Must be in same directory as python script
@@ -160,6 +162,28 @@ class CSP:
 		self.variables = variables
 		self.domain = domain
 		self.constraints = constraints
+
+	def get_index(self, value):
+		return self.domain.index(value)
+
+	def get_assignment(self, var_name):
+		for var in self.variables:
+			if var.name == var_name:
+				return var.assignment
+
+	def add_assignment(self, var_name, value):
+		for var in self.variables:
+			if var.name == var_name:
+				var.assignment = value
+
+	def remove_assignment(self, var_name):
+		for var in self.variables:
+			if var.name == var_name:
+				var.assignment = '?'
+
+	def print_assignments(self):
+		for var in self.variables:
+			print("{}={}".format(var.name, var.assignment))
 
 # var = Variable("C", 6, ['p', 'q', 'r', 'x', 'y', 'z'], Constraints())
 # print(var.name)
@@ -393,12 +417,12 @@ def get_degree(csp, slice_mrv):
 		# 				mrv.append([var.name, len(var.domain)])
 		# return mrv
 
-del csp.variables[0].domain[0]
-del csp.variables[0].domain[1]
-del csp.variables[1].domain[0]
-del csp.variables[1].domain[1]
-del csp.variables[4].domain[0]
-del csp.variables[4].domain[1]
+# del csp.variables[0].domain[0]
+# del csp.variables[0].domain[1]
+# del csp.variables[1].domain[0]
+# del csp.variables[1].domain[1]
+# del csp.variables[4].domain[0]
+# del csp.variables[4].domain[1]
 # csp.variables[0].assignment = 'p'
 
 # for var in csp.variables:
@@ -433,16 +457,19 @@ def select_unassigned(csp):
 			if var_mrv[1] > mrv[0][1] and slice_index == 0:
 				print(var_mrv)
 				slice_index = mrv.index(var_mrv)
-		slice_mrv = mrv[0:slice_index]
-		print("mrv ties: {}".format(slice_mrv))
+		if not slice_index:
+			slice_mrv = mrv[:]
+		else:
+			slice_mrv = mrv[0:slice_index]
+		# print("mrv ties: {}".format(slice_mrv))
 
 		# create list of each tie with degree heuristic value
 		deg_mrv = get_degree(csp, slice_mrv)
-		print("deg list: {}".format(deg_mrv))
+		# print("deg list: {}".format(deg_mrv))
 
 		# sort list ascending order
 		deg_sorted = sort_ascending(deg_mrv)
-		print("deg sort: {}".format(deg_sorted))
+		# print("deg sort: {}".format(deg_sorted))
 
 		# use variable in front
 		return deg_sorted[0][0]
@@ -456,7 +483,9 @@ def order_domain_values(var_name, csp):
 	# Using least-constraining-value heuristic
 	for var in csp.variables:
 		if var.name == var_name:
-			return var.domain
+			shuffled_domain = var.domain[:]
+			shuffle(shuffled_domain)
+			return shuffled_domain
 
 
 	# - build sorted list of variable names with their MRV
@@ -466,36 +495,57 @@ def order_domain_values(var_name, csp):
 
 	# alphabetical heuristic
 
+def is_consistent(var_name, value, csp):
+	for constraint in csp.constraints: # loop through each constraint
+		if constraint.m1 == var_name and csp.get_assignment(constraint.m2) != '?':
+			# print(csp.get_assignment(constraint.m2))
+			# print(csp.get_assignment(constraint.m1)) 
+			if constraint.matrix[csp.get_index(value)][csp.get_index(csp.get_assignment(constraint.m2))] == 1:
+				return 0
+		elif constraint.m2 == var_name and csp.get_assignment(constraint.m1) != '?': 
+			# print(csp.get_assignment(constraint.m2))
+			# print(csp.get_assignment(constraint.m1))
+			if constraint.matrix[csp.get_index(csp.get_assignment(constraint.m1))][csp.get_index(value)] == 1:
+				return 0
+	return 1
+
+
 def backtracking_search(csp):
 	if recursive_backtracking(csp): # success
 		print("Success - Function needs to be written")
 	else:
 		print("No solution could be found")
 
-def is_consistent(value, variable, csp):
-	
-	
 
 def recursive_backtracking(csp):
 	if complete_assignment(csp):
 		return csp.variables
-	variable = select_unassigned(csp)
+	var_name = select_unassigned(csp)
+	print("{}".format(var_name))
+	time.sleep(1)
+	for value in order_domain_values(var_name, csp):
+		print("var: {}  --  val: {}".format(var_name, value))
+		if is_consistent(var_name, value, csp):
+			# print("is consistent")
+			csp.add_assignment(var_name, value)
+			csp.print_assignments()
+			##### 
+			# inferences = inference(csp, variable, value) # AC-3 stuff
+			# if inferences != failure:
+				# add_inferences(assignment, inferences)
+			#####
 
-	for value in order_domain(variable, csp):
-		if consistent(value, assignment, csp):
-			add_value(value, assignment)
-			inferences = inference(csp, variable, value) # AC-3 stuff
-			if inferences != failure:
-				add_inferences(assignment, inferences)
-				result = recursive_backtracking(assignment, csp)
-				if success(result):
-					return result
-		remove_value(value, assignment)
-		remove_inferences(inferences, assignment)
-	return failure
+			result = recursive_backtracking(csp)
+			if result:
+				return 1
+		csp.remove_assignment(var_name)
+		#####
+		# remove_inferences(inferences, assignment)
+		#####
+	return 0
 
 
-
+backtracking_search(csp)
 
 '''
 def recursive_backtracking(assignment, csp):
