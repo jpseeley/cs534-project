@@ -419,7 +419,6 @@ def get_degree(csp, slice_mrv):
 
 # print(get_sorted_mrv(csp))
 
-print_csp(csp_global)
 
 def sort_ascending(list1):
 	sorted_list = sorted(list1, key=lambda x: x[1])
@@ -429,12 +428,14 @@ def sort_ascending(list1):
 def select_unassigned(csp):
 	# minimum remaining values heuristic
 	mrv = get_sorted_mrv(csp)
-	print("### select_unassigned() - {} (mrv's) ###".format(mrv))
+	# print("### select_unassigned() - {} (mrv's) ###".format(mrv))
 
 	# Solve simple case and create list for degree case
 	if len(mrv) == 1:
+		print("Selected variable {} because it was the only one left".format(mrv[0][0]))
 		return mrv[0][0]	
 	elif mrv[0][1] != mrv[1][1]: # singular mrv
+		print("Selected variable {} because it had the least mrv (= {})".format(mrv[0][0], mrv[0][1]))
 		return mrv[0][0]
 	else:
 		# They could all be the same 
@@ -443,7 +444,7 @@ def select_unassigned(csp):
 
 		for var_mrv in mrv:
 			if var_mrv[1] > mrv[0][1] and slice_index == 0:
-				print(var_mrv)
+				# print(var_mrv)
 				slice_index = mrv.index(var_mrv)
 		if not slice_index:
 			slice_mrv = copy.deepcopy(mrv)
@@ -460,6 +461,8 @@ def select_unassigned(csp):
 		# print("deg sort: {}".format(deg_sorted))
 
 		# use variable in front
+		print("Selected variable {} because it had the lowest degree heuristic (= {})".format(deg_sorted[0][0], deg_sorted[0][1]))
+
 		return deg_sorted[0][0]
 
 # print_constraints('C')
@@ -486,6 +489,9 @@ def order_domain_values(var_name, csp):
 	#		- Use constraint matrices to delete domain elements in UNASSIGNED VARIABLES
 	#		- sum length of domain of every variable, assign to 2-elt list 
 
+	if len(csp.get_domain(var_name)) == 0:
+		return []
+
 	csp_copy = copy.deepcopy(csp)
 
 	# old_domain_value = len(csp.get_domain(var_name))
@@ -503,7 +509,7 @@ def order_domain_values(var_name, csp):
 			value_scores.append([values, 0])
 	# print("value scores: {}".format(value_scores))
 
-	print("##### order_domain_values() - FINDING LCV FOR {} #####".format(var_name))
+	# print("##### order_domain_values() - FINDING LCV FOR {} #####".format(var_name))
 	# for each of our potential values determine the change in domain
 	for val_score in value_scores:
 		csp_copy = copy.deepcopy(csp)
@@ -536,10 +542,12 @@ def order_domain_values(var_name, csp):
 		# print("[{}] -> LCV_scores = {}".format(val_score[0], value_scores))
 
 	sorted_value_scores = sort_ascending(value_scores)
-	print("Sorted LCV: {}".format(sorted_value_scores))
+	# print("Sorted LCV: {}".format(sorted_value_scores))
 	sorted_values = []
 	for scores in sorted_value_scores:
 		sorted_values.append(scores[0])
+
+	print("Domain of {} sorted using LCV as: {}".format(var_name, sorted_values))
 	return sorted_values
 	# fill in old domain values with current values
 
@@ -636,12 +644,10 @@ def recursive_backtracking(csp):
 	if complete_assignment(csp):
 		return csp.variables
 	var_name = select_unassigned(csp)
-	# print("{}".format(var_name))
 	# time.sleep(1)
 	for value in order_domain_values(var_name, csp):
-		print("trying...  {} == {}".format(var_name, value))
 		if is_consistent(var_name, value, csp):
-			print("success... {} == {}".format(var_name, value))
+			print("{} == {} is consistent, adding to assignment".format(var_name, value))
 			csp.add_assignment(var_name, value)
 			# csp.print_assignments()
 			##### 
@@ -653,6 +659,9 @@ def recursive_backtracking(csp):
 			result = recursive_backtracking(csp)
 			if result:
 				return 1
+		else:
+			print("{} == {} is not consistent".format(var_name, value))
+
 		csp.remove_assignment(var_name)
 		#####
 		# remove_inferences(inferences, assignment)
@@ -696,7 +705,7 @@ def create_ac_3_queue(csp):
 
 # print create_ac_3_queue(csp_global)
 
-print csp_global.get_constraint_val('D', 'C', 'p', 'p')
+# print csp_global.get_constraint_val('D', 'C', 'p', 'p')
 
 # Revise
 def revise(csp, arc):
@@ -725,6 +734,7 @@ def revise(csp, arc):
 #	so, its counterintuitive
 def ac_3(csp):
 	queue = create_ac_3_queue(csp) # form initial arcs just from names of all constraints and reverse
+	# print(queue)
 	X_i = 0
 	X_j = 0
 	while len(queue):
@@ -732,7 +742,9 @@ def ac_3(csp):
 		X_i = arc[0]
 		X_j = arc[1]
 		if revise(csp, arc):
+			print("arc ({}, {}) revised domain of {} to {}".format(X_i, X_j, X_i, csp.get_domain(X_i)))
 			if len(csp.get_domain(X_i)) == 0: # size of X
+				print("Inconsistency: revised domain of {} was reduced to zero".format(X_i))
 				return 0
 			for constraint in csp.constraints:
 				# Neighbors are constraint matrices with Xi
@@ -740,14 +752,23 @@ def ac_3(csp):
 					queue.append([constraint.m2, X_i])
 				elif constraint.m2 == X_i and constraint.m1 != X_j:
 					queue.append([constraint.m1, X_i])
+		else:
+			print("arc ({}, {}) did not revise domain of {}".format(X_i, X_j, X_i))
+
 	return 1
 
+print("Initial CSP")
+print_csp(csp_global)
+print("\nPre-processing AC-3...")
 ac_3(csp_global)
+
+print("\nCSP after AC-3")
 print_csp(csp_global)
 
+print("\nBeginning Backtracking Search")
 backtracking_search(csp_global)
-print_csp(csp_global)
-
+# print_csp(csp_global)
+# print_constraints('all')
 
 
 #### OLD ALGORITHM ####
