@@ -1,0 +1,22 @@
+##### - variables
+C 6
+D 12
+E 6
+F 24
+##### - values
+p
+q
+r
+s
+##### - deadline constraint
+24
+##### - unary inclusive
+C p
+##### - unary exclusive
+F q
+##### - binary equals
+D E
+##### - binary not equals
+C D
+##### - binary not simultaneous
+C E p q
