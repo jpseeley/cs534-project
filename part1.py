@@ -513,6 +513,12 @@ def is_consistent(var_name, value, csp):
 				# print(var.length)
 				if p_t[0] == var.assignment:
 					p_t[1] = p_t[1] + int(var.length)
+		if var.name == var_name:
+			for p_t in proc_times:
+				# print("{} {}".format(p_t[0], p_t[1]))
+				# print(var.length)
+				if p_t[0] == value:
+					p_t[1] = p_t[1] + int(var.length)
 	# print(proc_times)
 
 	for p_t in proc_times:
