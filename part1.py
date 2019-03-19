@@ -161,6 +161,15 @@ class CSP:
 		for var in self.variables:
 			print("{}[{}]	= {}".format(var.name, var.length, var.assignment))
 
+	def get_constraint_val(self, m1, m2, val1, val2):
+		value = 0
+		for constraint in self.constraints:
+			if constraint.m1 == m1 and constraint.m2 == m2:
+				value = constraint.matrix[self.get_index(val1)][self.get_index(val2)]
+			elif constraint.m2 == m1 and constraint.m1 == m2:
+				value = constraint.matrix[self.get_index(val2)][self.get_index(val1)]
+		return value
+
 # var = Variable("C", 6, ['p', 'q', 'r', 'x', 'y', 'z'], Constraints())
 # print(var.name)
 # print(var.length)
@@ -651,7 +660,6 @@ def recursive_backtracking(csp):
 	return 0
 
 
-backtracking_search(csp_global)
 
 '''
 def recursive_backtracking(assignment, csp):
@@ -675,11 +683,70 @@ def recursive_backtracking(assignment, csp):
 
 # print_constraints('C')
 
+def create_ac_3_queue(csp):
+	queue = [[]]
+	for constraint in csp.constraints:
+		if len(queue[0]) == 0: # initialize
+			queue = [[constraint.m1, constraint.m2]]
+			queue.append([constraint.m2, constraint.m1])
+		else:
+			queue.append([constraint.m1, constraint.m2])
+			queue.append([constraint.m2, constraint.m1])
+	return queue
+
+# print create_ac_3_queue(csp_global)
+
+print csp_global.get_constraint_val('D', 'C', 'p', 'p')
+
+# Revise
+def revise(csp, arc):
+	revised = 0
+	X_i = arc[0]
+	X_j = arc[1]
+	satisfy_flag = 0
+
+	# copy just in case because we are deleting while looping
+	X_i_copy = copy.deepcopy(csp.get_domain(X_i))
+
+	for x in X_i_copy:
+		satisfy_flag = 0
+		for y in csp.get_domain(X_j):
+			if csp.get_constraint_val(X_i, X_j, x, y):
+				satisfy_flag = 1
+		if not satisfy_flag:
+			csp.get_domain(X_i).remove(x)
+			revised = 1
+	return revised
 
 
+#### AC-3 testing
+# Arc format is (Xi, Xj) where:
+# 	The direction is the effect Xj has on Xi 
+#	so, its counterintuitive
+def ac_3(csp):
+	queue = create_ac_3_queue(csp) # form initial arcs just from names of all constraints and reverse
+	X_i = 0
+	X_j = 0
+	while len(queue):
+		arc = queue.pop(0) # arc = (Xi, Xj)
+		X_i = arc[0]
+		X_j = arc[1]
+		if revise(csp, arc):
+			if len(csp.get_domain(X_i)) == 0: # size of X
+				return 0
+			for constraint in csp.constraints:
+				# Neighbors are constraint matrices with Xi
+				if constraint.m1 == X_i and constraint.m2 != X_j:
+					queue.append([constraint.m2, X_i])
+				elif constraint.m2 == X_i and constraint.m1 != X_j:
+					queue.append([constraint.m1, X_i])
+	return 1
 
+ac_3(csp_global)
+print_csp(csp_global)
 
-
+backtracking_search(csp_global)
+print_csp(csp_global)
 
 
 
