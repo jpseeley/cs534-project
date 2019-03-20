@@ -186,6 +186,33 @@ def print_csp(csp):
 	for var in csp.variables:
 		print("{}[{}] 	= {} of domain {} ".format(var.name, var.length, var.assignment, var.domain))
 
+def print_proc_times(csp):
+	proc_times = [[]]
+
+	# Create empty list for each processor
+	for proc in csp.domain:
+		if len(proc_times[0]) == 0:
+			proc_times = [[proc, 0]]
+		else:
+			proc_times.append([proc, 0])
+	# print(proc_times)
+
+	# Compute the time for each value 
+	for var in csp.variables:
+		for proc_time in proc_times:
+			# print("{} {}".format(p_t[0], p_t[1]))
+			# print(var.length)
+			if proc_time[0] == var.assignment:
+				proc_time[1] = proc_time[1] + int(var.length)
+	print("Process Time Global Maximum: {}".format(csp.deadline))
+	domain_maximum = 0
+	for process in proc_times:
+		if domain_maximum < process[1]:
+			domain_maximum = process[1]
+		print("Domain Value: {} length equals {}".format(process[0], process[1]))
+
+	print("Process Time Domain Maximum: {}".format(domain_maximum))
+
 # Return difference between two lists
 def list_diff(list_1, list_2):
     return list(set(list_1).symmetric_difference(set(list_2)))
@@ -639,6 +666,7 @@ print_csp(csp_global)
 
 print("\nBeginning Backtracking Search")
 backtracking_search(csp_global)
+print_proc_times(csp_global)
 
 
 
