@@ -292,6 +292,7 @@ def get_sorted_remaining_values(csp):
 				for var_mrv in copy_mrv:
 					if var_mrv[1] > len(var.domain) and not did_assign: # 2 elt list
 						mrv.insert(counter, [var.name, len(var.domain)])
+						## TODO: make this an if/else statement
 						did_assign = 1
 					counter += 1
 
