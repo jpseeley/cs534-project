@@ -15,8 +15,7 @@ def get_constrain_problem(filepath):
     # Loop to read graph data from .txt file and to store it in our CSP
     # Uses file_section_count to determine how to parse file data
     with open(filepath) as fp:
-        line = fp.readline() # read first line
-        while line:
+        for line in fp:
             line_info = line.split() # parse line by spaces
 
             # increment file section counter for each ##### seen
@@ -74,10 +73,6 @@ def get_constrain_problem(filepath):
                     for constraint in constraint_list:
                         if constraint.m1 == line_info[0] and constraint.m2 == line_info[1]:
                             constraint.add_bin_ns(line_info[2:4])
-            # Read next line
-            line = fp.readline()
-            #file_line_count += 1 # count is for debugging
-    fp.close()
 
     # Clean up all unspecified matrices values
     for constraint in constraint_list:

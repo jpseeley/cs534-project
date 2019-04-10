@@ -50,10 +50,6 @@ def print_csp(csp):
 	for var in csp.variables:
 		print("{}[{}] 	= {} of domain {} ".format(var.name, var.length, var.assignment, var.domain))
 
-# Return difference between two lists
-def list_diff(list_1, list_2):
-    return list(set(list_1).symmetric_difference(set(list_2)))
-
 #### DATA IMPORT COMPLETED  ####
 #### BEGINNING CSP SOLUTION ####
 
