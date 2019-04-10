@@ -1,2 +1,3 @@
 # VSCode IDE Files
-/.vscode/*
+.vscode/
+__pycache__/
