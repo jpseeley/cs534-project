@@ -9,12 +9,12 @@ import sys
 import time
 import copy
 from data_objects import Constraint_Matrix, Variable, CSP
-from file_handler import get_constrain_problem
+from constraint_input_reader import ConstrainInputReader
 
 # Path to graph node file
 # Must be in same directory as python script
 try:
-	filepath = sys.argv[1]
+	input_file = sys.argv[1]
 except:
 	print("Input file not specified.")
 	print("Usage:")
@@ -26,6 +26,7 @@ constraint_list = [] #####
 deadline = 0
 variable_list = [] ######
 domain_list = [] #####
+input_sections = 8
 
 # Print out matrix row by row
 def print_matrix(matrix):
@@ -55,7 +56,7 @@ def print_csp(csp):
 
 # Create Constraint Satisfaction Problem with:
 # Variables, Domain, & Constraints
-csp_global = get_constrain_problem(filepath)
+csp_global = ConstrainInputReader(input_file, input_sections).get_constrain_problem()
 
 # Return 1 is all variables in csp are assigned, 0 if any are not
 def complete_assignment(csp):
