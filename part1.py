@@ -554,10 +554,10 @@ def recursive_backtracking(csp):
 			print("{} == {} is not consistent".format(var_name, value))
 
 		csp.remove_assignment(var_name)
+		print("Backtracking")
 		##### AC-3 iterative
 		# remove_inferences(inferences, assignment)
 		#####
-	print("Backtracking")
 	return 0
 
 # Return queue of AC-3 arcs to initialize AC-3
