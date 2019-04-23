@@ -1,0 +1,55 @@
+##### - variables
+A 5
+B 10
+C 5
+D 10
+E 5
+F 10
+G 20
+H 5
+I 10
+J 5
+K 10
+L 5
+M 10
+N 20
+##### - values
+p 1
+q 1
+r 1
+s 1
+t 1
+##### - deadline constraint
+140
+##### - unary inclusive
+A q r s
+B p
+C q r s
+D p
+E q r s
+F p
+G t
+H q r s
+I p
+J q r s
+K p
+L q r s
+M p
+N t
+##### - unary exclusive
+##### - binary equals
+##### - binary not equals
+##### - binary not simultaneous
+##### - predecessors
+G F
+F E
+E D
+D C
+C B
+B A
+N M
+M L
+L K
+K J
+J I
+I H

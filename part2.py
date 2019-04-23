@@ -396,10 +396,29 @@ def sort_ascending(list1):
 def select_unassigned(csp):
 	# minimum remaining values heuristic
 	mrv = get_sorted_remaining_values(csp)
-	# print("### select_unassigned() - {} (mrv's) ###".format(mrv))
+	print("### select_unassigned() - {} (mrv's) ###".format(mrv))
+
+	# Find tasks with no predecessors. These should be assigned first to prevent issues
+	no_predecessors = list(filter(lambda var_name: not csp.pred_constraints[var_name[0]], mrv))
+	# Find unassigned tasks with predecessors already assigned
+	assigned_variables = list(filter(lambda variable: variable.assignment != '?', csp.variables))
+	assigned_variable_names = []
+	for variable in assigned_variables:
+		assigned_variable_names.append(variable.name)
+	has_assigned_predecessors = []
+	for value in mrv:
+		var_name = value[0]
+		if not set(csp.pred_constraints[var_name]).isdisjoint(assigned_variable_names):
+			has_assigned_predecessors.append(var_name)
 
 	# Solve simple case and create list for degree case
-	if len(mrv) == 1:
+	if len(no_predecessors) > 0:
+		print("Selected variable {} because it has no predecessor".format(no_predecessors[0][0]))
+		return no_predecessors[0][0]
+	if len(has_assigned_predecessors) > 0:
+		print("Selected variable {}  because it's predecessor has been assigned".format(has_assigned_predecessors[0]))
+		return has_assigned_predecessors[0]
+	elif len(mrv) == 1:
 		print("Selected variable {} because it was the only one left".format(mrv[0][0]))
 		return mrv[0][0]	
 	elif mrv[0][1] != mrv[1][1]: # singular mrv
@@ -581,7 +600,6 @@ def is_consistent(var_name, value, csp):
 	earliest_start_time = 1
 	for pred in csp.pred_constraints[var_name]:
 		if not is_assigned(pred, csp): # If predecessor not assigned not consistent
-			# print("pred not assigned")
 			return 0
 		else: 
 			if earliest_start_time < get_end_time(pred, csp):
