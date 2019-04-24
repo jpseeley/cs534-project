@@ -22,18 +22,18 @@ t 1
 ##### - deadline constraint
 140
 ##### - unary inclusive
-A q r s
+A q 
 B p
-C q r s
+C r
 D p
-E q r s
+E s
 F p
 G t
-H q r s
+H q
 I p
-J q r s
+J r
 K p
-L q r s
+L s
 M p
 N t
 ##### - unary exclusive
